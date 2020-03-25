@@ -2,3 +2,4 @@
 *.iml
 .idea
 aws-info.txt
+.cpcache

@@ -5,7 +5,8 @@
     [clojure.core.async :as async]
     [cognitect.aws.client.api :as aws]
     [cognitect.aws.credentials :as aws-creds])
-  (:import (java.util Date)))
+  (:import (java.util Date)
+           (java.lang ProcessHandle)))
 
 (def aws-info-file "aws-info.txt")
 (def aws-info
@@ -56,14 +57,23 @@
 
 (defn run-many!
   [n]
-  (dotimes [n n]
-    (async/thread
-      (let [c (client)]
-        (log/info :invoke n)
-        (example-invoke c)
-        (log/info :invoke-done n)))))
+  (async/merge
+    (map (fn [n]
+           (async/thread
+             (let [c (client)]
+               (log/info :invoke n)
+               (example-invoke c)
+               (log/info :invoke-done n))))
+         (range n))))
 
 (comment
   (run-many! 4)
   (run-many! 3)
   )
+
+(defn -main
+  [& args]
+  (let [n (Long/parseLong (first args))
+        pid (.pid (ProcessHandle/current))]
+    (log/info :n-threads n :pid pid)
+    (async/<!! (run-many! n))))
